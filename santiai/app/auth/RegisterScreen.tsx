@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 const RegisterScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -209,6 +209,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    paddingHorizontal: 30, // Añade esto
   },
   dividerLine: {
     flex: 1,
@@ -216,12 +217,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#D1D5DB',
   },
   dividerTextContainer: {
-    paddingHorizontal: 15,
+    paddingHorizontal: 20, // Aumenta de 16 a 20
     backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 150, // Añade esto para dar más espacio
   },
   dividerText: {
     fontSize: 13,
     color: '#6B7280',
+    textAlign: 'center', // Añade esto
   },
   googleButton: {
     width: '100%',

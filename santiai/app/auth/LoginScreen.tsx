@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 const LoginScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -126,9 +126,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 28,
+    lineHeight: 24,
     marginBottom: 24,
-    paddingHorizontal: 10,
+    paddingHorizontal: 20,
+    width: '100%',
+    flexWrap: 'wrap',
   },
   formSection: {
     width: '100%',
