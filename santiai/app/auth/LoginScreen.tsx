@@ -88,12 +88,15 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
     paddingVertical: 40,
+    backgroundColor: '#fff',
+    minHeight: '100%',
   },
   logoSection: {
     alignItems: 'center',

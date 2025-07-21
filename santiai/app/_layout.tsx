@@ -23,6 +23,8 @@ export default function RootLayout() {
         <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
         <Stack.Screen name="auth/RegisterScreen" options={{ headerShown: false }} />
         <Stack.Screen name="home/HomeScreen" options={{ headerShown: false }} />
+        <Stack.Screen name="home/VoiceAssistant" options={{ headerShown: false }} />
+        <Stack.Screen name="home/CameraAssistant" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

@@ -26,7 +26,7 @@ const HomeScreen = () => {
         {/* Cards Container */}
         <View style={styles.cardsContainer}>
           {/* Asistente por Voz Card */}
-          <TouchableOpacity style={styles.card} onPress={() => console.log('Navegar a asistente por voz')}>
+          <TouchableOpacity style={styles.card} onPress={() => router.push('/home/VoiceAssistant')}>
             <View style={styles.cardIconContainer}>
               <FontAwesome name="microphone" size={32} color="#fff" />
             </View>
@@ -40,7 +40,7 @@ const HomeScreen = () => {
           </TouchableOpacity>
 
           {/* Asistente con Cámara Card */}
-          <TouchableOpacity style={styles.card} onPress={() => console.log('Navegar a asistente con cámara')}>
+          <TouchableOpacity style={styles.card} onPress={() => router.push('/home/CameraAssistant')}>
             <View style={styles.cardIconContainer}>
               <FontAwesome name="camera" size={32} color="#fff" />
             </View>
@@ -133,6 +133,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 20,
     paddingHorizontal: 24,
+    backgroundColor: '#fff',
+    minHeight: '100%',
   },
   welcomeSection: {
     marginBottom: 32,
