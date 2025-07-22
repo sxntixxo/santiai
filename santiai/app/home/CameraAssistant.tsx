@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Platform, ScrollView, Image, Animated } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import * as ImagePicker from 'expo-image-picker';
 
 export const options = { headerShown: false };
 
@@ -12,7 +13,10 @@ export default function CameraAssistant() {
   const [processing, setProcessing] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [cameraType, setCameraType] = useState<CameraType>('back');
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [showResponsePanel, setShowResponsePanel] = useState(false);
   const cameraRef = useRef(null);
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   // Permisos de cámara
   const [permission, requestPermission] = useCameraPermissions();
@@ -24,17 +28,93 @@ export default function CameraAssistant() {
   };
 
   const handleCapturePhoto = async () => {
-    // CameraView no expone takePictureAsync directamente, esto es solo placeholder
-    setProcessing(true);
-    setShowResults(false);
-    setTimeout(() => {
-      setProcessing(false);
-      setShowResults(true);
-    }, 2000);
+    if (cameraRef.current) {
+      try {
+        // Simular captura de foto
+        const mockImageUri = 'https://via.placeholder.com/400x300/cccccc/666666?text=Imagen+Capturada';
+        setCapturedImage(mockImageUri);
+        setShowResponsePanel(true);
+        setProcessing(true);
+        setShowResults(false);
+
+        // Animar el panel hacia arriba
+        Animated.timing(slideAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+
+        // Simular procesamiento
+        setTimeout(() => {
+          setProcessing(false);
+          setShowResults(true);
+        }, 3000);
+      } catch (error) {
+        console.error('Error capturando foto:', error);
+      }
+    }
   };
 
-  const handleOpenGallery = () => {
-    handleCapturePhoto(); // Simulación
+  const handleOpenGallery = async () => {
+    try {
+      // Solicitar permisos primero
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        alert('Se necesita permiso para acceder a la galería de fotos');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8, // Optimizar calidad para mejor rendimiento
+        exif: false, // No necesitamos datos EXIF
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setCapturedImage(result.assets[0].uri);
+        setShowResponsePanel(true);
+        setProcessing(true);
+        setShowResults(false);
+
+        // Animar el panel hacia arriba
+        Animated.timing(slideAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+
+        // Simular procesamiento
+        setTimeout(() => {
+          setProcessing(false);
+          setShowResults(true);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Error abriendo galería:', error);
+      alert('Error al acceder a la galería');
+    }
+  };
+
+  const handleRetakePhoto = () => {
+    setShowResponsePanel(false);
+    setCapturedImage(null);
+    setProcessing(false);
+    setShowResults(false);
+
+    // Animar el panel hacia abajo
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleShareResults = () => {
+    // Implementar funcionalidad de compartir
+    console.log('Compartir resultados');
   };
 
   // Mostrar mensaje especial en plataformas no móviles
@@ -75,21 +155,26 @@ export default function CameraAssistant() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.headerBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
+    <View style={styles.fullScreenContainer}>
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
+
+      {/* Header flotante */}
+      <View style={styles.floatingHeader}>
+        <TouchableOpacity style={styles.floatingHeaderBtn} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={20} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Asistente con Cámara</Text>
-        <TouchableOpacity style={styles.headerBtn} onPress={handleToggleFlash}>
-          <Ionicons name={flashEnabled ? 'flash' : 'flash-outline'} size={24} color="#000" />
-        </TouchableOpacity>
+        <View style={styles.headerControls}>
+          <TouchableOpacity style={styles.floatingHeaderBtn} onPress={handleToggleFlash}>
+            <Ionicons name={flashEnabled ? 'flash' : 'flash-outline'} size={20} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.floatingHeaderBtn} onPress={handleSwitchCamera}>
+            <MaterialCommunityIcons name="camera-switch" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Camera Preview real */}
-      <View style={styles.cameraPreview}>
+      {/* Área de cámara a pantalla completa */}
+      <View style={styles.fullScreenCamera}>
         {(Platform.OS === 'ios' || Platform.OS === 'android') && (
           <CameraView
             ref={cameraRef}
@@ -98,116 +183,219 @@ export default function CameraAssistant() {
             enableTorch={flashEnabled}
           />
         )}
+
         {/* Overlay de guías */}
         <View style={styles.guideOverlay} pointerEvents="none">
           <View style={styles.guideBox} />
         </View>
-        {/* Controles de cámara */}
-        <View style={styles.cameraControls}>
-          <TouchableOpacity style={styles.controlBtn} onPress={handleSwitchCamera}>
-            <MaterialCommunityIcons name="camera-switch" size={24} color="#fff" />
+
+        {/* Controles inferiores */}
+        <View style={styles.bottomControls}>
+          <TouchableOpacity style={styles.sideControlBtn} onPress={handleOpenGallery}>
+            <Ionicons name="image-outline" size={24} color="#fff" />
           </TouchableOpacity>
+
           <TouchableOpacity style={styles.captureBtn} onPress={handleCapturePhoto}>
             <View style={styles.captureInnerBtn} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.controlBtn} onPress={handleOpenGallery}>
-            <Ionicons name="image-outline" size={24} color="#fff" />
+
+          <TouchableOpacity style={styles.sideControlBtn}>
+            <Ionicons name="options-outline" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Área de instrucciones y resultados */}
-      <View style={styles.bottomArea}>
-        <View style={styles.instructionsCard}>
-          <Text style={styles.instructionsTitle}>Instrucciones</Text>
-          <View style={{ marginTop: 8 }}>
-            <Text style={styles.instructionsText}>• Asegúrate de que la imagen esté bien iluminada</Text>
-            <Text style={styles.instructionsText}>• Mantén la cámara estable al tomar la foto</Text>
-            <Text style={styles.instructionsText}>• Enfoca el área de interés dentro del marco</Text>
-          </View>
-        </View>
+      {/* Panel de respuesta deslizable */}
+      {showResponsePanel && (
+        <Animated.View
+          style={[
+            styles.responsePanel,
+            {
+              transform: [{
+                translateY: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [600, 0],
+                })
+              }]
+            }
+          ]}
+        >
+          <ScrollView style={styles.responsePanelContent} showsVerticalScrollIndicator={false}>
+            {/* Indicador de arrastre */}
+            <View style={styles.dragIndicator} />
 
-        {/* Estado de procesamiento */}
-        {processing && (
-          <View style={styles.processingState}>
-            <View style={styles.spinner} />
-            <Text style={styles.processingText}>Analizando imagen...</Text>
-          </View>
-        )}
+            {/* Imagen capturada */}
+            {capturedImage && (
+              <View style={styles.capturedImageContainer}>
+                <Image source={{ uri: capturedImage }} style={styles.capturedImage} />
+              </View>
+            )}
 
-        {/* Resultados del análisis */}
-        {showResults && (
-          <View style={styles.resultsCard}>
-            <Text style={styles.resultsTitle}>Análisis de SANTIAI</Text>
-            <View style={{ marginTop: 8 }}>
-              <View style={styles.observationBox}>
-                <Text style={styles.observationTitle}>Observaciones Detectadas</Text>
-                <Text style={styles.observationText}>Se observa una lesión cutánea con características que requieren evaluación médica profesional.</Text>
+            {/* Estado de procesamiento */}
+            {processing && (
+              <View style={styles.processingState}>
+                <View style={styles.spinner} />
+                <Text style={styles.processingText}>Analizando con SANTIAI...</Text>
               </View>
-              <Text style={styles.resultsSubtitle}>Recomendaciones:</Text>
-              <Text style={styles.resultsText}>1. Consulta con un dermatólogo lo antes posible</Text>
-              <Text style={styles.resultsText}>2. Evita la exposición solar directa en el área</Text>
-              <Text style={styles.resultsText}>3. No apliques productos sin supervisión médica</Text>
-              <Text style={styles.resultsText}>4. Monitorea cualquier cambio en tamaño o color</Text>
-              <View style={styles.importantBox}>
-                <Text style={styles.importantText}>⚠️ Importante: Este análisis es orientativo. Siempre consulta con un profesional médico para un diagnóstico preciso.</Text>
+            )}
+
+            {/* Resultados del análisis */}
+            {showResults && (
+              <View style={styles.analysisResults}>
+                <Text style={styles.analysisTitle}>Análisis de SANTIAI</Text>
+
+                {/* Análisis visual completado */}
+                <View style={styles.analysisCompletedBox}>
+                  <View style={styles.analysisIconContainer}>
+                    <Ionicons name="medical" size={16} color="#fff" />
+                  </View>
+                  <View style={styles.analysisCompletedContent}>
+                    <Text style={styles.analysisCompletedTitle}>Análisis Visual Completado</Text>
+                    <Text style={styles.analysisCompletedText}>
+                      He detectado una lesión cutánea que requiere evaluación profesional. Los patrones observados sugieren características que deben ser examinadas por un dermatólogo.
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Observaciones detectadas */}
+                <View style={styles.observationsSection}>
+                  <View style={styles.sectionHeader}>
+                    <Ionicons name="search" size={16} color="#6b7280" />
+                    <Text style={styles.sectionTitle}>Observaciones Detectadas</Text>
+                  </View>
+                  <View style={styles.observationsList}>
+                    <View style={styles.observationItem}>
+                      <View style={[styles.observationDot, { backgroundColor: '#f59e0b' }]} />
+                      <Text style={styles.observationText}>Forma irregular detectada</Text>
+                    </View>
+                    <View style={styles.observationItem}>
+                      <View style={[styles.observationDot, { backgroundColor: '#f59e0b' }]} />
+                      <Text style={styles.observationText}>Variación en coloración</Text>
+                    </View>
+                    <View style={styles.observationItem}>
+                      <View style={[styles.observationDot, { backgroundColor: '#ef4444' }]} />
+                      <Text style={styles.observationText}>Tamaño mayor a 6mm</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Recomendaciones inmediatas */}
+                <View style={styles.recommendationsSection}>
+                  <View style={styles.sectionHeader}>
+                    <Ionicons name="bulb" size={16} color="#6b7280" />
+                    <Text style={styles.sectionTitle}>Recomendaciones Inmediatas</Text>
+                  </View>
+
+                  <View style={styles.recommendationItem}>
+                    <View style={[styles.recommendationNumber, { backgroundColor: '#10b981' }]}>
+                      <Text style={styles.recommendationNumberText}>1</Text>
+                    </View>
+                    <View style={styles.recommendationContent}>
+                      <Text style={styles.recommendationTitle}>Consulta dermatológica urgente</Text>
+                      <Text style={styles.recommendationSubtitle}>Programa una cita dentro de las próximas 48 horas</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.recommendationItem}>
+                    <View style={[styles.recommendationNumber, { backgroundColor: '#f59e0b' }]}>
+                      <Text style={styles.recommendationNumberText}>2</Text>
+                    </View>
+                    <View style={styles.recommendationContent}>
+                      <Text style={styles.recommendationTitle}>Protección solar</Text>
+                      <Text style={styles.recommendationSubtitle}>Evita exposición directa al sol en el área</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.recommendationItem}>
+                    <View style={[styles.recommendationNumber, { backgroundColor: '#3b82f6' }]}>
+                      <Text style={styles.recommendationNumberText}>3</Text>
+                    </View>
+                    <View style={styles.recommendationContent}>
+                      <Text style={styles.recommendationTitle}>Monitoreo continuo</Text>
+                      <Text style={styles.recommendationSubtitle}>Documenta cualquier cambio en tamaño o color</Text>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Aviso médico importante */}
+                <View style={styles.importantNotice}>
+                  <Ionicons name="warning" size={16} color="#dc2626" />
+                  <View style={styles.importantNoticeContent}>
+                    <Text style={styles.importantNoticeTitle}>Aviso Médico Importante</Text>
+                    <Text style={styles.importantNoticeText}>
+                      Este análisis es una herramienta de apoyo y no reemplaza la evaluación médica profesional. Siempre consulta con un especialista para obtener un diagnóstico preciso y tratamiento adecuado.
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Botones de acción */}
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity style={styles.secondaryButton} onPress={handleRetakePhoto}>
+                    <Ionicons name="camera" size={16} color="#000" />
+                    <Text style={styles.secondaryButtonText}>Nueva foto</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.primaryButton} onPress={handleShareResults}>
+                    <Ionicons name="share" size={16} color="#fff" />
+                    <Text style={styles.primaryButtonText}>Compartir</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          </View>
-        )}
-      </View>
-    </SafeAreaView>
+            )}
+          </ScrollView>
+        </Animated.View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Estilos originales para compatibilidad
   container: {
     flex: 1,
     backgroundColor: '#fff',
     minHeight: '100%',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#fff',
-    zIndex: 10,
+
+  // Nuevos estilos para la interfaz mejorada
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: '#000',
   },
-  headerBtn: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
-  },
-  cameraPreview: {
-    width: '100%',
-    height: 320,
-    backgroundColor: '#111827',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  cameraOverlay: {
+
+  floatingHeader: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 50,
+    paddingBottom: 16,
+    zIndex: 50,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+
+  floatingHeaderBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2,
   },
+
+  headerControls: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+
+  fullScreenCamera: {
+    flex: 1,
+    position: 'relative',
+  },
+
   guideOverlay: {
     position: 'absolute',
     top: 0,
@@ -218,81 +406,98 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 3,
   },
+
   guideBox: {
-    width: 200,
-    height: 200,
+    width: 320,
+    height: 320,
     borderWidth: 2,
-    borderColor: '#fff',
-    borderStyle: 'dashed',
-    borderRadius: 16,
-    opacity: 0.5,
+    borderColor: 'rgba(255,255,255,0.5)',
+    borderRadius: 20,
   },
-  cameraControls: {
+
+  bottomControls: {
     position: 'absolute',
-    bottom: 16,
+    bottom: 32,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 32,
     zIndex: 4,
   },
-  controlBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+
+  sideControlBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 16,
   },
+
   captureBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 4,
+    borderColor: '#fff',
+  },
+
+  captureInnerBtn: {
     width: 64,
     height: 64,
     borderRadius: 32,
     backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    borderWidth: 2,
+    borderColor: '#d1d5db',
   },
-  captureInnerBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#000',
-  },
-  bottomArea: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 24,
+
+  responsePanel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#fff',
-    minHeight: '100%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '70%',
+    zIndex: 40,
   },
-  instructionsCard: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+
+  responsePanelContent: {
+    flex: 1,
   },
-  instructionsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 4,
+
+  dragIndicator: {
+    width: 48,
+    height: 4,
+    backgroundColor: '#d1d5db',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 24,
+    marginBottom: 24,
   },
-  instructionsText: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 2,
+
+  capturedImageContainer: {
+    marginBottom: 24,
+    paddingHorizontal: 24,
   },
+
+  capturedImage: {
+    width: '100%',
+    height: 192,
+    borderRadius: 20,
+  },
+
   processingState: {
     alignItems: 'center',
-    marginVertical: 24,
+    paddingVertical: 32,
   },
+
   spinner: {
     width: 48,
     height: 48,
@@ -300,73 +505,218 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     borderTopColor: 'transparent',
     borderRadius: 24,
-    marginBottom: 12,
-    alignSelf: 'center',
-    // Animación de giro se puede agregar con una librería o Animated
+    marginBottom: 16,
   },
+
   processingText: {
     fontSize: 14,
     color: '#6b7280',
   },
-  resultsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+
+  analysisResults: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+  },
+
+  analysisTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
     marginBottom: 16,
   },
-  resultsTitle: {
-    fontSize: 16,
+
+  analysisCompletedBox: {
+    backgroundColor: '#dbeafe',
+    borderColor: '#bfdbfe',
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+
+  analysisIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  analysisCompletedContent: {
+    flex: 1,
+  },
+
+  analysisCompletedTitle: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#000',
+    color: '#1e40af',
     marginBottom: 8,
   },
-  resultsSubtitle: {
+
+  analysisCompletedText: {
+    fontSize: 14,
+    color: '#1d4ed8',
+    lineHeight: 20,
+  },
+
+  observationsSection: {
+    marginBottom: 16,
+  },
+
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+
+  sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#000',
-    marginTop: 12,
+  },
+
+  observationsList: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+  },
+
+  observationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  observationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+
+  observationText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+
+  recommendationsSection: {
+    marginBottom: 16,
+  },
+
+  recommendationItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderRadius: 12,
+  },
+
+  recommendationNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+
+  recommendationNumberText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+
+  recommendationContent: {
+    flex: 1,
+  },
+
+  recommendationTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#000',
     marginBottom: 4,
   },
-  resultsText: {
-    fontSize: 14,
+
+  recommendationSubtitle: {
+    fontSize: 12,
     color: '#6b7280',
-    marginBottom: 2,
   },
-  observationBox: {
-    backgroundColor: '#fef9c3',
-    borderColor: '#fde68a',
-    borderWidth: 1,
+
+  importantNotice: {
+    backgroundColor: '#fef2f2',
+    borderLeftWidth: 4,
+    borderLeftColor: '#dc2626',
     borderRadius: 8,
-    padding: 8,
+    padding: 16,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+
+  importantNoticeContent: {
+    flex: 1,
+  },
+
+  importantNoticeTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#dc2626',
     marginBottom: 8,
   },
-  observationTitle: {
-    fontWeight: '600',
-    color: '#b45309',
-    marginBottom: 2,
-  },
-  observationText: {
-    color: '#b45309',
-    fontSize: 13,
-  },
-  importantBox: {
-    backgroundColor: '#fee2e2',
-    borderColor: '#fecaca',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 8,
-    marginTop: 12,
-  },
-  importantText: {
+
+  importantNoticeText: {
+    fontSize: 14,
     color: '#b91c1c',
-    fontSize: 13,
-    fontWeight: '500',
+    lineHeight: 20,
+  },
+
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+
+  secondaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    backgroundColor: '#fff',
+  },
+
+  secondaryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+  },
+
+  primaryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#000',
+  },
+
+  primaryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
   },
 }); 
