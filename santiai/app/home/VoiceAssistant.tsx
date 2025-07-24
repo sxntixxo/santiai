@@ -58,7 +58,6 @@ const VoiceAssistant = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <View style={styles.header}>
-        <View style={styles.headerBtn} />
         <Text style={styles.headerTitle}>Asistente por Voz</Text>
         <TouchableOpacity style={styles.headerBtn} onPress={toggleChatVisibility}>
           <Ionicons

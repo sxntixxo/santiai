@@ -8,7 +8,7 @@ export const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between', // Back to space-between to separate title and icon
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -60,17 +60,20 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 16, // Added horizontal padding for better text visibility
     paddingBottom: 120, // Avoid overlapping with the bottom bar
   },
   minimalistTitle: {
-    fontSize: 28,
+    fontSize: 32, // Increased font size for better readability
     fontWeight: 'bold',
     color: '#000',
-    marginBottom: 8,
+    marginBottom: 12, // Adjusted margin for spacing
   },
   minimalistSubtitle: {
-    fontSize: 18,
+    fontSize: 16, // Reduced font size to ensure full text visibility
     color: '#6b7280',
+    textAlign: 'center', // Center-align text for better layout
+    paddingHorizontal: 20, // Added padding to prevent text cutoff
   },
   bottomBar: {
     position: 'absolute',
