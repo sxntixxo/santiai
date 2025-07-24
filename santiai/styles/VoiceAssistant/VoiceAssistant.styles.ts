@@ -4,23 +4,19 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    minHeight: '100%',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#fff',
-    zIndex: 10,
+    borderBottomColor: '#f0f0f0',
   },
   headerBtn: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -29,103 +25,74 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000',
   },
-  content: {
+  chatContainer: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    backgroundColor: '#fff',
-    minHeight: '100%',
   },
-  centeredText: {
+  chatContentContainer: {
+    padding: 16,
+    paddingBottom: 120, // Extra space to not be hidden by the bottom bar
+  },
+  messageBubble: {
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 12,
+    maxWidth: '80%',
+  },
+  userBubble: {
+    backgroundColor: '#000',
+    alignSelf: 'flex-end',
+    borderBottomRightRadius: 4,
+  },
+  assistantBubble: {
+    backgroundColor: '#f0f0f0',
+    alignSelf: 'flex-start',
+    borderBottomLeftRadius: 4,
+  },
+  userBubbleText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  assistantBubbleText: {
+    color: '#000',
+    fontSize: 16,
+  },
+  minimalistContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
+    paddingBottom: 120, // Avoid overlapping with the bottom bar
   },
-  title: {
-    fontSize: 24,
+  minimalistTitle: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#000',
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
+  minimalistSubtitle: {
+    fontSize: 18,
     color: '#6b7280',
-    textAlign: 'center',
-    alignSelf: 'center',
   },
-  micContainer: {
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    paddingBottom: 32, // Safe area for home indicator
     alignItems: 'center',
-    marginBottom: 24,
   },
   micButton: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 16,
+    shadowRadius: 8,
     elevation: 8,
-  },
-  micButtonActive: {
-    backgroundColor: '#ef4444',
-  },
-  recordingStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  pulseDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#ef4444',
-    marginRight: 8,
-  },
-  recordingText: {
-    color: '#6b7280',
-    fontSize: 14,
-  },
-  cardSecondary: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  cardPrimary: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 8,
-  },
-  cardText: {
-    fontSize: 14,
-    color: '#6b7280',
-    minHeight: 32,
-  },
-  instructionsContainer: {
-    marginTop: 16,
-    alignItems: 'center',
-  },
-  instructionsText: {
-    fontSize: 12,
-    color: '#9ca3af',
-    textAlign: 'center',
   },
 });
