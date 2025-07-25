@@ -1,12 +1,13 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
 import { styles } from '../../styles/HomeScreen/HomeScreen.styles';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 const HomeScreen = () => {
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { flex: 1, paddingTop: StatusBar.currentHeight || 44 }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -80,10 +81,8 @@ const HomeScreen = () => {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
-
-
-export default HomeScreen; 
+export default HomeScreen;

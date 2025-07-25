@@ -1,12 +1,13 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
 import { styles } from '../../styles/RegisterScreen/RegisterScreen.styles';
 import { FontAwesome } from '@expo/vector-icons';
 import { router } from 'expo-router';
 
 const RegisterScreen = () => {
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: StatusBar.currentHeight || 44 }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -103,7 +104,7 @@ const RegisterScreen = () => {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

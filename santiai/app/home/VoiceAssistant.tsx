@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, ScrollView, Dimensions } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -55,8 +55,8 @@ const VoiceAssistant = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View style={[styles.container, { flex: 1, paddingTop: StatusBar.currentHeight || 44 }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Asistente por Voz</Text>
         <TouchableOpacity style={styles.headerBtn} onPress={toggleChatVisibility}>
@@ -100,7 +100,7 @@ const VoiceAssistant = () => {
           <Ionicons name={isRecording ? 'mic' : 'mic-outline'} size={32} color="#fff" />
         </TouchableOpacity>
       </BlurView>
-    </SafeAreaView>
+    </View>
   );
 };
 

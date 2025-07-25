@@ -3,6 +3,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
+import { View } from 'react-native';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -19,14 +20,16 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
-        <Stack.Screen name="auth/RegisterScreen" options={{ headerShown: false }} />
-        <Stack.Screen name="home/HomeScreen" options={{ headerShown: false }} />
-        <Stack.Screen name="home/VoiceAssistant" options={{ headerShown: false }} />
-        <Stack.Screen name="home/CameraAssistant" options={{ headerShown: false }} />
-      </Stack>
-      <StatusBar style="auto" />
+      <View style={{ flex: 1 }}>
+        <Stack>
+          <Stack.Screen name="auth/LoginScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="auth/RegisterScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="home/HomeScreen" options={{ headerShown: false }} />
+          <Stack.Screen name="home/VoiceAssistant" options={{ headerShown: false }} />
+          <Stack.Screen name="home/CameraAssistant" options={{ headerShown: false }} />
+        </Stack>
+        <StatusBar style="auto" translucent={true} />
+      </View>
     </ThemeProvider>
   );
 }

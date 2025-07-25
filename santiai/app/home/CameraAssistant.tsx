@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, Platform, ScrollView, Image, Animated, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StatusBar, Platform, ScrollView, Image, Animated, StyleSheet, Dimensions } from 'react-native';
 import { styles } from '../../styles/CameraAssistant/CameraAssistant.styles';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -121,43 +121,43 @@ export default function CameraAssistant() {
   // Mostrar mensaje especial en plataformas no móviles
   if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={[styles.container, { paddingTop: StatusBar.currentHeight || 44 }]}>
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text>La cámara solo está disponible en dispositivos móviles.</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // Mostrar estado de permisos
   if (!permission) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={[styles.container, { paddingTop: StatusBar.currentHeight || 44 }]}>
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text>Solicitando permiso de cámara...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
   if (!permission.granted) {
     return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <View style={[styles.container, { paddingTop: StatusBar.currentHeight || 44 }]}>
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text>Necesitamos tu permiso para mostrar la cámara</Text>
           <TouchableOpacity onPress={requestPermission} style={{ marginTop: 16, backgroundColor: '#000', padding: 12, borderRadius: 8 }}>
             <Text style={{ color: '#fff', fontWeight: 'bold' }}>Conceder permiso</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
     <View style={styles.fullScreenContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
       {/* Header flotante */}
       <View style={styles.floatingHeader}>

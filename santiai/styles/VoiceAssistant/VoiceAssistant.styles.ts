@@ -30,7 +30,7 @@ export const styles = StyleSheet.create({
   },
   chatContentContainer: {
     padding: 16,
-    paddingBottom: 120, // Extra space to not be hidden by the bottom bar
+    paddingBottom: 140, // Increased space to avoid overlap with bottom bar
   },
   messageBubble: {
     borderRadius: 20,
@@ -60,8 +60,8 @@ export const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 16, // Added horizontal padding for better text visibility
-    paddingBottom: 120, // Avoid overlapping with the bottom bar
+    paddingHorizontal: 16,
+    paddingBottom: 140, // Increased to ensure no overlap with bottom bar
   },
   minimalistTitle: {
     fontSize: 32, // Increased font size for better readability
@@ -82,7 +82,7 @@ export const styles = StyleSheet.create({
     right: 0,
     paddingVertical: 16,
     paddingHorizontal: 24,
-    paddingBottom: 32, // Safe area for home indicator
+    paddingBottom: 40, // Increased padding for better spacing on all devices
     alignItems: 'center',
   },
   micButton: {

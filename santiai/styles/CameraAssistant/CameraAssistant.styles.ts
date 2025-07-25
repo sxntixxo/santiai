@@ -23,7 +23,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 50,
+    paddingTop: 60, // Increased to account for status bar
     paddingBottom: 16,
     zIndex: 50,
     backgroundColor: 'rgba(0,0,0,0.3)',
@@ -69,7 +69,7 @@ export const styles = StyleSheet.create({
 
   bottomControls: {
     position: 'absolute',
-    bottom: 32,
+    bottom: 50, // Increased to ensure visibility on all devices
     left: 0,
     right: 0,
     flexDirection: 'row',
