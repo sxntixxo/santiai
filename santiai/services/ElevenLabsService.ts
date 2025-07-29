@@ -8,7 +8,6 @@ interface ElevenLabsConfig {
 interface ConversationMessage {
   role: 'user' | 'assistant';
   text: string;
-  audioUrl?: string;
   timestamp: Date;
 }
 
@@ -16,23 +15,20 @@ class ElevenLabsService {
   private config: ElevenLabsConfig;
   private websocket: WebSocket | null = null;
   private isConnected: boolean = false;
-  private conversationId: string | null = null;
+  private isInConversation: boolean = false;
   private onMessageCallback?: (message: ConversationMessage) => void;
   private onErrorCallback?: (error: string) => void;
   private onConnectedCallback?: () => void;
-  private audioQueue: string[] = [];
   private currentSound: Audio.Sound | null = null;
 
   constructor(config: ElevenLabsConfig) {
     this.config = config;
   }
 
-  // Conectar al agente conversacional
   async connect(): Promise<void> {
     try {
-      // Incluir la API key en la URL como parámetro de consulta
       const wsUrl = `wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${this.config.agentId}&xi-api-key=${this.config.apiKey}`;
-
+      
       this.websocket = new WebSocket(wsUrl);
 
       this.websocket.onopen = () => {
@@ -42,113 +38,86 @@ class ElevenLabsService {
       };
 
       this.websocket.onmessage = (event) => {
-        this.handleWebSocketMessage(event);
+        this.handleMessage(event);
       };
 
       this.websocket.onerror = (error) => {
         console.error('WebSocket error:', error);
-        this.onErrorCallback?.('Error de conexión con el asistente');
+        this.onErrorCallback?.('Error de conexión');
       };
 
       this.websocket.onclose = () => {
-        console.log('WebSocket connection closed');
+        console.log('WebSocket closed');
         this.isConnected = false;
+        this.isInConversation = false;
       };
 
     } catch (error) {
       console.error('Failed to connect:', error);
-      this.onErrorCallback?.('No se pudo conectar al asistente');
+      this.onErrorCallback?.('No se pudo conectar');
     }
   }
 
-  // Manejar mensajes del WebSocket
-  private handleWebSocketMessage(event: MessageEvent) {
+  private handleMessage(event: MessageEvent) {
     try {
       const data = JSON.parse(event.data);
-      console.log('WebSocket message received:', data.type);
-
+      
       switch (data.type) {
         case 'conversation_initiation_metadata':
-          this.conversationId = data.conversation_initiation_metadata_event?.conversation_id;
-          console.log('Conversation initiated:', this.conversationId);
+          console.log('Conversation initiated');
           break;
 
         case 'audio':
-          // Recibir audio del asistente
           if (data.audio_event?.audio_base_64) {
-            this.handleAudioResponse(data.audio_event.audio_base_64);
+            this.playAudio(data.audio_event.audio_base_64);
           }
           break;
 
         case 'user_transcript':
-          // Transcripción del usuario
           if (data.user_transcript_event?.user_transcript) {
-            const userMessage: ConversationMessage = {
+            this.onMessageCallback?.({
               role: 'user',
               text: data.user_transcript_event.user_transcript,
               timestamp: new Date(),
-            };
-            this.onMessageCallback?.(userMessage);
+            });
           }
           break;
 
         case 'agent_response':
-          // Respuesta del agente en texto
           if (data.agent_response_event?.agent_response) {
-            const agentMessage: ConversationMessage = {
+            this.onMessageCallback?.({
               role: 'assistant',
               text: data.agent_response_event.agent_response,
               timestamp: new Date(),
-            };
-            this.onMessageCallback?.(agentMessage);
+            });
           }
           break;
 
         case 'ping':
-          // Responder al ping para mantener conexión
-          if (this.websocket) {
-            this.websocket.send(JSON.stringify({ type: 'pong' }));
-          }
-          break;
-
-        default:
-          console.log('Unknown message type:', data.type);
+          this.websocket?.send(JSON.stringify({ type: 'pong' }));
           break;
       }
     } catch (error) {
-      console.error('Error parsing WebSocket message:', error);
+      console.error('Error parsing message:', error);
     }
   }
 
-  // Manejar respuesta de audio del asistente
-  private async handleAudioResponse(audioBase64: string) {
+  private async playAudio(audioBase64: string) {
     try {
-      // Convertir base64 a blob y crear URL
-      const audioBlob = this.base64ToBlob(audioBase64, 'audio/mpeg');
+      if (this.currentSound) {
+        await this.currentSound.unloadAsync();
+      }
+
+      // Crear blob URL para el audio
+      const byteCharacters = atob(audioBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const audioBlob = new Blob([byteArray], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
 
-      // Agregar a la cola de reproducción
-      this.audioQueue.push(audioUrl);
-
-      // Si no hay audio reproduciéndose, empezar reproducción
-      if (!this.currentSound) {
-        await this.playNextAudio();
-      }
-    } catch (error) {
-      console.error('Error handling audio response:', error);
-    }
-  }
-
-  // Reproducir siguiente audio en la cola
-  private async playNextAudio() {
-    if (this.audioQueue.length === 0) {
-      this.currentSound = null;
-      return;
-    }
-
-    const audioUrl = this.audioQueue.shift()!;
-
-    try {
       const { sound } = await Audio.Sound.createAsync(
         { uri: audioUrl },
         { shouldPlay: true }
@@ -159,60 +128,79 @@ class ElevenLabsService {
       sound.setOnPlaybackStatusUpdate((status) => {
         if (status.isLoaded && status.didJustFinish) {
           sound.unloadAsync();
-          this.playNextAudio(); // Reproducir siguiente en la cola
+          URL.revokeObjectURL(audioUrl);
         }
       });
+
     } catch (error) {
       console.error('Error playing audio:', error);
-      this.playNextAudio(); // Intentar con el siguiente
+      // Fallback: intentar con data URI
+      try {
+        const audioUri = `data:audio/mp3;base64,${audioBase64}`;
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: audioUri },
+          { shouldPlay: true }
+        );
+        this.currentSound = sound;
+      } catch (fallbackError) {
+        console.error('Fallback audio error:', fallbackError);
+      }
     }
   }
 
-  // Enviar audio del usuario
+  async startConversation(): Promise<void> {
+    if (!this.isConnected) {
+      throw new Error('No conectado');
+    }
+    this.isInConversation = true;
+    console.log('Conversación iniciada');
+  }
+
+  async stopConversation(): Promise<void> {
+    this.isInConversation = false;
+    console.log('Conversación terminada');
+  }
+
   async sendAudio(audioUri: string): Promise<void> {
-    if (!this.isConnected || !this.websocket) {
-      throw new Error('No conectado al asistente');
+    if (!this.websocket || !this.isConnected) {
+      throw new Error('No conectado');
     }
 
     try {
-      // Leer el archivo de audio
       const response = await fetch(audioUri);
       const audioBlob = await response.blob();
       const audioBase64 = await this.blobToBase64(audioBlob);
-
-      // Remover el prefijo data:audio/...;base64, si existe
       const base64Data = audioBase64.includes(',') ? audioBase64.split(',')[1] : audioBase64;
 
-      // Enviar audio al WebSocket según la documentación de ElevenLabs
-      const message = {
+      this.websocket.send(JSON.stringify({
         user_audio_chunk: base64Data,
-      };
-
-      this.websocket.send(JSON.stringify(message));
+      }));
     } catch (error) {
       console.error('Error sending audio:', error);
       throw error;
     }
   }
 
-  // Desconectar
-  disconnect(): void {
-    if (this.websocket) {
-      this.websocket.close();
-      this.websocket = null;
-    }
-    this.isConnected = false;
-    this.conversationId = null;
-
-    // Limpiar audio
-    if (this.currentSound) {
-      this.currentSound.unloadAsync();
-      this.currentSound = null;
-    }
-    this.audioQueue = [];
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
 
-  // Callbacks para eventos
+  disconnect(): void {
+    this.stopConversation();
+    this.websocket?.close();
+    this.websocket = null;
+    this.isConnected = false;
+    
+    if (this.currentSound) {
+      this.currentSound.unloadAsync();
+    }
+  }
+
   onMessage(callback: (message: ConversationMessage) => void): void {
     this.onMessageCallback = callback;
   }
@@ -225,29 +213,12 @@ class ElevenLabsService {
     this.onConnectedCallback = callback;
   }
 
-  // Utilidades
-  private base64ToBlob(base64: string, mimeType: string): Blob {
-    const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-    const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], { type: mimeType });
-  }
-
-  private blobToBase64(blob: Blob): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  }
-
-  // Getters
   get connected(): boolean {
     return this.isConnected;
+  }
+
+  get inConversation(): boolean {
+    return this.isInConversation;
   }
 }
 

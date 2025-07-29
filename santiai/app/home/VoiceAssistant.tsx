@@ -118,44 +118,59 @@ const VoiceAssistant = () => {
       return;
     }
 
-    if (audioManager.state.isRecording) {
-      // Detener grabación
-      try {
-        setIsProcessing(true);
-        const audioUri = await audioManager.stopRecording();
-        
-        if (audioUri && elevenLabsService.current) {
-          // Enviar audio a ElevenLabs
-          await elevenLabsService.current.sendAudio(audioUri);
+    if (elevenLabsService.current?.inConversation) {
+      if (audioManager.state.isRecording) {
+        // Detener grabación y enviar audio
+        try {
+          setIsProcessing(true);
+          const audioUri = await audioManager.stopRecording();
+          
+          if (audioUri && elevenLabsService.current) {
+            // Enviar audio a ElevenLabs
+            await elevenLabsService.current.sendAudio(audioUri);
+          }
+          setIsProcessing(false);
+        } catch (error) {
+          console.error('Error sending audio:', error);
+          setIsProcessing(false);
         }
-      } catch (error) {
-        console.error('Error stopping recording:', error);
-        Alert.alert('Error', 'No se pudo procesar el audio');
-        setIsProcessing(false);
+      } else {
+        // Iniciar grabación dentro de la conversación
+        try {
+          await audioManager.startRecording();
+          
+          const listeningMessage: Message = {
+            id: Date.now().toString(),
+            role: 'user',
+            text: 'Escuchando...',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, listeningMessage]);
+        } catch (error) {
+          console.error('Error starting recording:', error);
+        }
       }
     } else {
-      // Iniciar grabación
+      // Iniciar conversación continua
       try {
-        // Solicitar permisos si es necesario
         if (!audioManager.state.hasPermission) {
           const granted = await audioManager.requestPermissions();
           if (!granted) return;
         }
 
-        await audioManager.startRecording();
+        await elevenLabsService.current?.startConversation();
         
-        // Agregar mensaje de "Escuchando..."
-        const listeningMessage: Message = {
+        const conversationMessage: Message = {
           id: Date.now().toString(),
           role: 'user',
-          text: 'Escuchando...',
+          text: 'Conversación iniciada - Presiona el micrófono para hablar...',
           timestamp: new Date(),
         };
-        setMessages(prev => [...prev, listeningMessage]);
+        setMessages(prev => [...prev, conversationMessage]);
         
       } catch (error) {
-        console.error('Error starting recording:', error);
-        Alert.alert('Error', 'No se pudo iniciar la grabación');
+        console.error('Error starting conversation:', error);
+        Alert.alert('Error', 'No se pudo iniciar la conversación');
       }
     }
   };
@@ -172,8 +187,11 @@ const VoiceAssistant = () => {
 
   const getMicButtonState = () => {
     if (!isConnected) return 'mic-off';
-    if (audioManager.state.isRecording) return 'mic';
     if (isProcessing) return 'hourglass';
+    if (elevenLabsService.current?.inConversation) {
+      if (audioManager.state.isRecording) return 'mic';
+      return 'mic-circle';
+    }
     return 'mic-outline';
   };
 
@@ -202,9 +220,12 @@ const VoiceAssistant = () => {
       <View style={styles.statusBar}>
         <View style={[styles.statusIndicator, { backgroundColor: getConnectionStatus().color }]} />
         <Text style={styles.statusText}>{getConnectionStatus().text}</Text>
-        {audioManager.state.isRecording && (
+        {elevenLabsService.current?.inConversation && (
           <Text style={styles.recordingTime}>
-            {Math.floor(audioManager.state.duration / 60)}:{(audioManager.state.duration % 60).toString().padStart(2, '0')}
+            {audioManager.state.isRecording 
+              ? `${Math.floor(audioManager.state.duration / 60)}:${(audioManager.state.duration % 60).toString().padStart(2, '0')}`
+              : 'En conversación - Toca para hablar'
+            }
           </Text>
         )}
       </View>
@@ -265,10 +286,12 @@ const VoiceAssistant = () => {
               : 'Presiona el micrófono para hablar'
             }
           </Text>
-          {audioManager.state.isRecording && (
+          {elevenLabsService.current?.inConversation && (
             <View style={styles.recordingIndicator}>
               <View style={styles.recordingDot} />
-              <Text style={styles.recordingText}>Grabando...</Text>
+              <Text style={styles.recordingText}>
+                {audioManager.state.isRecording ? 'Grabando...' : 'En conversación - Toca para hablar'}
+              </Text>
             </View>
           )}
         </View>
@@ -276,11 +299,33 @@ const VoiceAssistant = () => {
 
       {/* Bottom Bar with Microphone */}
       <BlurView intensity={80} tint="light" style={styles.bottomBar}>
+        {elevenLabsService.current?.inConversation && (
+          <TouchableOpacity 
+            style={[styles.micButton, { backgroundColor: '#EF4444', marginRight: 20 }]} 
+            onPress={async () => {
+              try {
+                await elevenLabsService.current?.stopConversation();
+                const endMessage: Message = {
+                  id: Date.now().toString(),
+                  role: 'assistant',
+                  text: 'Conversación terminada.',
+                  timestamp: new Date(),
+                };
+                setMessages(prev => [...prev, endMessage]);
+              } catch (error) {
+                console.error('Error ending conversation:', error);
+              }
+            }}
+          >
+            <Ionicons name="call" size={24} color="#fff" />
+          </TouchableOpacity>
+        )}
+        
         <TouchableOpacity 
           style={[
             styles.micButton,
             !isConnected && styles.micButtonDisabled,
-            audioManager.state.isRecording && styles.micButtonRecording
+            (elevenLabsService.current?.inConversation && audioManager.state.isRecording) && styles.micButtonRecording
           ]} 
           onPress={handleMicPress}
           disabled={!isConnected && !connectionError}
